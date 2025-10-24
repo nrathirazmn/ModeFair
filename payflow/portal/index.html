@@ -133,7 +133,6 @@ registerBtn.addEventListener('click', async ()=>{
       body:JSON.stringify({name,email,password:pass})
     });
 
-    // Read text then parse (handles empty/non-json responses)
     let data = null;
     try { data = await safeJson(res); } catch(parseErr) {
       // If server returned non-json text, handle it
@@ -153,8 +152,6 @@ registerBtn.addEventListener('click', async ()=>{
     localStorage.apiKey = data.apiKey || '';
     renderKeys();
 
-    // Use relative path - works when serving `payflow` as root
-    // replace absolute path with relative resolution
     window.location.href = new URL('dashboard.html', location.href).toString();
 
   }catch(err){
@@ -164,7 +161,7 @@ registerBtn.addEventListener('click', async ()=>{
   }
 });
 
-/** login handler */
+//Login Button
 loginBtn.addEventListener('click', async ()=>{
   logError.style.display='none';
   logError.textContent = '';
@@ -198,7 +195,6 @@ loginBtn.addEventListener('click', async ()=>{
     localStorage.token = data.token || '';
     localStorage.apiKey = data.apiKey || '';
     renderKeys();
-    // replace absolute path with relative resolution
     window.location.href = new URL('dashboard.html', location.href).toString();
 
   }catch(err){

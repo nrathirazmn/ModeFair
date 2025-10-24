@@ -1,4 +1,4 @@
-# 💳 PayFlow – Full-Stack Engineer Assessment
+# 💳 PayFlow – ModeFair Full-Stack Engineer Assessment 
 
 PayFlow is a simplified payment gateway prototype built as part of a full-stack engineering assessment.
 It simulates merchant registration, login, API key management, and a demo checkout page that sends payment requests through a secure backend API.
@@ -37,7 +37,7 @@ It simulates merchant registration, login, API key management, and a demo checko
 
 ### 1️⃣ Prerequisites
 
-Make sure you have:
+Things to have before running
 
 * [Java 17+](https://adoptium.net/)
 * [Maven 3+](https://maven.apache.org/install.html)
@@ -55,7 +55,7 @@ mvn -v
 ### 2️⃣ Clone the Repository
 
 ```bash
-git clone <>
+git clone <'https://github.com/nrathirazmn/ModeFair'>
 cd payflow/backend
 ```
 
@@ -91,11 +91,13 @@ npx serve .
 payflow/
 ├── backend/
 │   ├── src/main/java/com/payflow/
+│   │   ├── config/
 │   │   ├── controller/
 │   │   ├── dto/
 │   │   ├── entity/
 │   │   ├── repo/
 │   │   ├── security/
+│   │   ├── service/
 │   │   └── PayflowApplication.java
 │   ├── src/main/resources/
 │   │   └── application.yml
@@ -110,14 +112,16 @@ payflow/
 │   │   ├── index.html
 │   │   └── dashboard.html
 │   └── demo/
-│       └── checkout.html
+│       ├── checkout.html
+│       └── confirm.html
 │
 └── README.md
+
 ```
 
 ---
 
-## 🧪 Usage Flow
+## 🧪 Project Flow
 
 1. Go to `/portal/index.html`
 2. Register as a new merchant
@@ -132,9 +136,14 @@ payflow/
 ## 🔒 Authentication Details
 
 * Public endpoints:
-  `/api/auth/register`, `/api/auth/login`, `/api/payments`, `/api/health`
+  `/api/auth/register`, 
+  `/api/auth/login`, 
+  `/api/payments`, 
+  `/api/health`
 * Protected endpoints:
-  `/api/merchants/**`, `/api/transactions/**`
+  `/api/merchants/**`, 
+  `/api/transactions/**`
+  
 * After login, your token and API key are stored in `localStorage`
 * Authenticated requests include:
 

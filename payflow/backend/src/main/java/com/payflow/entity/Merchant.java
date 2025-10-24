@@ -23,7 +23,7 @@ public class Merchant {
 
   private Instant createdAt = Instant.now();
 
-  // --- getters & setters ---
+  // Getters & Setters
 
   public String getId() { return id; }
 

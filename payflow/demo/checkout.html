@@ -162,7 +162,7 @@ payBtn.addEventListener('click', async ()=>{
     return;
   }
 
-  // prepare payload
+  // For payload
   const body = {
     amount: amt,
     currency: 'USD',
@@ -192,7 +192,11 @@ payBtn.addEventListener('click', async ()=>{
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.message || JSON.stringify(data));
-    location.href = `confirm.html?id=${encodeURIComponent(data.transactionId)}&status=${encodeURIComponent(data.status)}`;
+    const confirmUrl = new URL('confirm.html', location.href);
+    confirmUrl.searchParams.set('id', data.transactionId || '');
+    confirmUrl.searchParams.set('status', data.status || '');
+    confirmUrl.searchParams.set('ts', Date.now()); 
+    location.href = confirmUrl.toString();
    }catch(err){
     errors.style.display='block';
     errors.textContent = 'Payment failed: ' + (err.message || err);

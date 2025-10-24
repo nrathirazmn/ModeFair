@@ -24,7 +24,7 @@ public class PaymentService {
         var tx = new Transaction();
         tx.setMerchantId(merchant.getId());
         tx.setAmount(req.amount());
-        tx.setCurrency(req.currency() == null ? "USD" : req.currency());
+        tx.setCurrency(req.currency() == null ? "MYR" : req.currency());
         tx.setCustomerEmail(req.customerEmail());
         tx.setCustomerName(req.customerName());
         tx.setCardLast4(req.cardNumber().substring(12));
@@ -32,24 +32,24 @@ public class PaymentService {
         
         var savedTx = txs.save(tx); 
 
-        boolean success = req.cardNumber().equals("4242424242424242");
+        String cleanedCard = req.cardNumber() == null ? "" : req.cardNumber().replaceAll("\\s+", "");
+        boolean success = cleanedCard.equals("4242424242424242");
+
         if (success) {
             savedTx.setStatus(Transaction.Status.SUCCEEDED);
         } else {
             savedTx.setStatus(Transaction.Status.FAILED);
             savedTx.setFailureReason("Card declined (test simulation)");
         }
-        
-        txs.save(savedTx); 
 
+        txs.save(savedTx);
         webhook.emitPaymentCompleted(merchant, savedTx);
 
-        
-    return new PaymentResponse(
-    savedTx.getId(), // This now returns a String from the updated getter
-    savedTx.getStatus().name(),
-    success ? "Payment successful" : "Payment failed"
-);
-}
+        return new PaymentResponse(
+                savedTx.getId(),
+                savedTx.getStatus().name(),
+                success ? "Payment successful" : "Payment failed"
+        );
+    }
 
     }

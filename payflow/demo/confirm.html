@@ -1,13 +1,79 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Confirmation</title></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Payment Confirmation • PayFlow</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--accent:#0b3b66;--success:#28a745;--danger:#e55353}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#f7fbff,var(--bg));margin:0;display:flex;align-items:center;justify-content:center;height:100vh;padding:20px}
+    .card{background:var(--card);border-radius:12px;padding:28px;box-shadow:0 8px 30px rgba(9,30,66,0.08);max-width:720px;width:100%;text-align:center}
+    .title{font-size:22px;margin:0 0 8px}
+    .msg{color:#44566c;margin:8px 0 18px}
+    .id{font-family:monospace;background:#f1f6fb;padding:8px;border-radius:8px;display:inline-block}
+    .success{color:var(--success)}
+    .failed{color:var(--danger)}
+    .buttons{display:flex;gap:12px;justify-content:center;margin-top:18px}
+    .btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
+    .btn-primary{background:var(--accent);color:white}
+    .btn-plain{background:#f3f6f9}
+    @media(max-width:520px){.card{padding:18px}}
+  </style>
+</head>
 <body>
-  <h1 id="title"></h1>
-  <p id="info"></p>
+  <div class="card" role="main" aria-live="polite">
+    <h1 id="title" class="title">Payment Result</h1>
+    <p id="msg" class="msg">Loading result…</p>
+
+    <div>
+      <div>Transaction ID</div>
+      <div id="tx" class="id">—</div>
+    </div>
+
+    <div class="buttons">
+      <button id="back" class="btn btn-plain">Back to Checkout</button>
+      <button id="dashboard" class="btn btn-primary">Open Dashboard</button>
+    </div>
+  </div>
+
   <script>
+    // Read params 
     const p = new URLSearchParams(location.search);
-    const status = p.get('status');
-    const id = p.get('id');
-    document.getElementById('title').textContent = status === 'SUCCEEDED' ? 'Payment Successful' : 'Payment Failed';
-    document.getElementById('info').textContent = 'Transaction ID: ' + id;
+    const status = (p.get('status') || '').toUpperCase();
+    const id = p.get('id') || '';
+    const isSuccess = status === 'SUCCEEDED' || status === 'SUCCESS';
+
+    const titleEl = document.getElementById('title');
+    const msgEl = document.getElementById('msg');
+    const txEl = document.getElementById('tx');
+
+    if (isSuccess) {
+      titleEl.textContent = 'Payment Successful 🎉';
+      msgEl.textContent = 'Thank you — your payment completed successfully.';
+      msgEl.classList.add('success');
+    } else if (status) {
+      titleEl.textContent = 'Payment Failed';
+      msgEl.textContent = 'Something went wrong with the payment.';
+      msgEl.classList.add('failed');
+    } else {
+      titleEl.textContent = 'Payment result';
+      msgEl.textContent = 'No status found. Please check your transaction in the dashboard.';
+    }
+
+    txEl.textContent = id || '(no transaction id)';
+
+    // Buttons
+    document.getElementById('back').addEventListener('click', () => {
+      const next = new URL('checkout.html', location.href);
+      location.href = next.toString();
+    });
+
+    document.getElementById('dashboard').addEventListener('click', () => {
+      const url = new URL('../portal/dashboard.html', location.href);
+      location.href = url.toString();
+    });
+
+    console.log('Confirm page params:', { status, id, isSuccess });
   </script>
-</body></html>
+</body>
+</html>

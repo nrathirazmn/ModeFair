@@ -33,7 +33,7 @@ public class Transaction {
 
   public enum Status { PENDING, SUCCEEDED, FAILED }
 
-  // --- getters & setters ---
+  // Getters & Setters
 
   public String getId() { 
         // Convert UUID to String for your PaymentService response

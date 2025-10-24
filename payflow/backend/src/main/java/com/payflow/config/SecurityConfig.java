@@ -37,9 +37,6 @@ CorsConfigurationSource corsConfigurationSource() {
     cfg.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000")); 
     cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-PAYFLOW-KEY")); 
     cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
-    
-    // 🌟 CRITICAL FIX: Change to TRUE 🌟
-    // Resolves issues with complex headers (like X-PAYFLOW-KEY) not being allowed
     cfg.setAllowCredentials(true); 
     
     UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();

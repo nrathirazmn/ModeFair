@@ -1,5 +1,3 @@
-// assets/ui-helpers.js
-// small helpers: mask card, expiry, cvv, validate email/password
 
 export function formatCardNumber(value){
   return value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim();
@@ -20,7 +18,6 @@ export function formatCvv(value){
 export function isEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 
 export function passwordStrength(p){
-  // 0..100
   let score=0;
   if(p.length>=8) score+=30;
   if(/[a-z]/.test(p)) score+=15;
