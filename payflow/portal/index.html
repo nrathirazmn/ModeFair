@@ -1,0 +1,222 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Portal • PayFlow</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <script type="module" src="../assets/ui-helpers.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2 class="h1">PayFlow Portal</h2>
+      <p class="help">Register to get your API key or login if you already have one.</p>
+
+      <div style="display:flex;gap:18px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:280px">
+          <h3 style="margin-top:6px">Register</h3>
+          <label>Name</label>
+          <input id="r-name" class="input" />
+          <label style="margin-top:8px">Email</label>
+          <input id="r-email" class="input" />
+          <label style="margin-top:8px">Password</label>
+          <input id="r-pass" type="password" class="input" />
+          <label style="margin-top:8px">Confirm password</label>
+          <input id="r-pass2" type="password" class="input" />
+          <div class="pw-meter"><i id="pwbar" style="width:0%"></i></div>
+          <div id="regError" class="error" style="display:none"></div>
+          <div style="margin-top:10px">
+            <button id="registerBtn" class="pay-btn">Register</button>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:280px">
+          <h3 style="margin-top:6px">Login</h3>
+          <label>Email</label>
+          <input id="l-email" class="input" />
+          <label style="margin-top:8px">Password</label>
+          <input id="l-pass" type="password" class="input" />
+          <div id="logError" class="error" style="display:none"></div>
+          <div style="margin-top:10px">
+            <button id="loginBtn" class="pay-btn">Login</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- give this card an id so we can hide/show it -->
+    <div id="quickLinksCard" class="card" style="display:none">
+      <h3 class="h1">Quick links</h3>
+      <p class="help">Open demo directly with your API key or copy it</p>
+      <p><strong>Your API Key:</strong> <span id="apiKey" class="kv">—</span>
+        <button id="copyKey" style="margin-left:8px">Copy</button>
+      </p>
+      <p><a id="openDemo" href="#" class="help">Open demo with my key</a></p>
+    </div>
+  </div>
+
+<script type="module">
+import { passwordStrength, isEmail } from '../assets/ui-helpers.js';
+
+const rName = document.getElementById('r-name');
+const rEmail = document.getElementById('r-email');
+const rPass = document.getElementById('r-pass');
+const rPass2 = document.getElementById('r-pass2');
+const registerBtn = document.getElementById('registerBtn');
+const regError = document.getElementById('regError');
+const pwbar = document.getElementById('pwbar');
+
+const lEmail = document.getElementById('l-email');
+const lPass = document.getElementById('l-pass');
+const loginBtn = document.getElementById('loginBtn');
+const logError = document.getElementById('logError');
+
+const apiKeyEl = document.getElementById('apiKey');
+const copyKey = document.getElementById('copyKey');
+const openDemo = document.getElementById('openDemo');
+const quickLinksCard = document.getElementById('quickLinksCard');
+
+function renderKeys(){
+  const key = (localStorage.token && localStorage.apiKey) || '';
+  if (key && key.length > 0) {
+    quickLinksCard.style.display = ''; // show
+    apiKeyEl.textContent = key;
+    try {
+      const demoUrl = new URL(`../demo/checkout.html?amount=4999&key=${encodeURIComponent(key)}`, location.href);
+      openDemo.href = demoUrl.toString();
+    } catch(e) {
+      // fallback
+      openDemo.href = `../demo/checkout.html?amount=4999&key=${encodeURIComponent(key)}`;
+    }
+  } else {
+    quickLinksCard.style.display = 'none';
+    apiKeyEl.textContent = '(not logged in)';
+    openDemo.href = '#';
+  }
+}
+renderKeys();
+
+rPass.addEventListener('input', e=>{
+  const s = passwordStrength(e.target.value);
+  pwbar.style.width = s + '%';
+});
+
+/** safeJson - read response as text then try to parse JSON if present
+ * returns parsed object or null if empty
+ * throws if invalid JSON
+ */
+async function safeJson(res) {
+  const text = await res.text();
+  if (!text || text.length === 0) return null;
+  try { return JSON.parse(text); }
+  catch (err) { throw new Error('Invalid JSON from server: ' + text.slice(0,200)); }
+}
+
+/** register handler */
+registerBtn.addEventListener('click', async ()=>{
+  regError.style.display='none';
+  regError.textContent = '';
+  const name = rName.value.trim();
+  const email = rEmail.value.trim();
+  const pass = rPass.value;
+  const pass2 = rPass2.value;
+  if(name.length<2 || !isEmail(email) || pass.length<8 || pass !== pass2){
+    regError.style.display='block';
+    regError.innerHTML = 'Check name, email, password length (>=8) and ensure passwords match.';
+    return;
+  }
+  registerBtn.disabled=true;
+  try{
+    const res = await fetch('http://localhost:8080/api/auth/register',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,email,password:pass})
+    });
+
+    // Read text then parse (handles empty/non-json responses)
+    let data = null;
+    try { data = await safeJson(res); } catch(parseErr) {
+      // If server returned non-json text, handle it
+      throw new Error('Server returned invalid JSON: ' + parseErr.message);
+    }
+
+    if(!res.ok) {
+      // Prefer structured message if present
+      const msg = (data && (data.message || data.error)) || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+
+    if(!data) throw new Error('Server returned empty response');
+
+    // store token+key and redirect to dashboard
+    localStorage.token = data.token || '';
+    localStorage.apiKey = data.apiKey || '';
+    renderKeys();
+
+    // Use relative path - works when serving `payflow` as root
+    // replace absolute path with relative resolution
+    window.location.href = new URL('dashboard.html', location.href).toString();
+
+  }catch(err){
+    regError.style.display='block';
+    regError.textContent = err.message || String(err);
+    registerBtn.disabled=false;
+  }
+});
+
+/** login handler */
+loginBtn.addEventListener('click', async ()=>{
+  logError.style.display='none';
+  logError.textContent = '';
+  const email = lEmail.value.trim();
+  const pass = lPass.value;
+  if(!isEmail(email) || pass.length<1){
+    logError.style.display='block';
+    logError.textContent='Enter email and password';
+    return;
+  }
+  loginBtn.disabled=true;
+  try{
+    const res = await fetch('http://localhost:8080/api/auth/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email, password:pass})
+    });
+
+    let data = null;
+    try { data = await safeJson(res); } catch(parseErr) {
+      throw new Error('Server returned invalid JSON: ' + parseErr.message);
+    }
+
+    if(!res.ok){
+      const msg = (data && (data.message || data.error)) || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+
+    if(!data) throw new Error('Server returned empty response');
+
+    localStorage.token = data.token || '';
+    localStorage.apiKey = data.apiKey || '';
+    renderKeys();
+    // replace absolute path with relative resolution
+    window.location.href = new URL('dashboard.html', location.href).toString();
+
+  }catch(err){
+    logError.style.display='block';
+    logError.textContent = err.message || String(err);
+    loginBtn.disabled=false;
+  }
+});
+
+copyKey.addEventListener('click', async ()=>{
+  if(!localStorage.apiKey) return alert('No API key to copy');
+  try {
+    await navigator.clipboard.writeText(localStorage.apiKey);
+    alert('API key copied to clipboard');
+  } catch (err) {
+    alert('Could not copy: ' + (err && err.message ? err.message : err));
+  }
+});
+</script>
+</body>
+</html>

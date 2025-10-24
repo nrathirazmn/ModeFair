@@ -1,0 +1,13 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Confirmation</title></head>
+<body>
+  <h1 id="title"></h1>
+  <p id="info"></p>
+  <script>
+    const p = new URLSearchParams(location.search);
+    const status = p.get('status');
+    const id = p.get('id');
+    document.getElementById('title').textContent = status === 'SUCCEEDED' ? 'Payment Successful' : 'Payment Failed';
+    document.getElementById('info').textContent = 'Transaction ID: ' + id;
+  </script>
+</body></html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard • PayFlow</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2 class="h1">Transactions</h2>
+      <p class="help">API Key: <span id="apiKey" class="kv">—</span>
+        <button id="copyKey" style="margin-left:10px">Copy</button>
+        <a id="openDemo" style="margin-left:12px" class="help">Open demo with my key</a>
+      </p>
+
+      <table class="table" id="txTable">
+        <thead><tr><th>ID</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="4">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- <div class="card">
+      <h3 class="h1">Settings</h3>
+      <label>Webhook URL</label>
+      <input id="webhook" class="input" placeholder="https://example.com/webhook" />
+      <div style="margin-top:10px">
+        <button id="saveWebhook" class="pay-btn">Save</button>
+      </div>
+      <div id="msg" class="help"></div>
+    </div>
+  </div> -->
+
+<script>
+const apiKeyEl = document.getElementById('apiKey');
+const copyKey = document.getElementById('copyKey');
+const openDemo = document.getElementById('openDemo');
+const tbody = document.getElementById('tbody');
+const webhookEl = document.getElementById('webhook');
+const saveWebhook = document.getElementById('saveWebhook');
+const msg = document.getElementById('msg');
+
+const base='http://localhost:8080';
+const token = localStorage.token;
+
+apiKeyEl.textContent = localStorage.apiKey || '(not logged in)';
+openDemo.href = `../demo/checkout.html?amount=4999&key=${encodeURIComponent(localStorage.apiKey||'')}`;
+
+async function loadTx(){
+  if(!token){ tbody.innerHTML = '<tr><td colspan="4">Not logged in. <a href="/portal/index.html">Login</a></td></tr>'; return;}
+  try{
+    const r = await fetch(base + '/api/merchants/me/transactions', {headers:{'Authorization':'Bearer '+token}});
+    if(!r.ok){
+      tbody.innerHTML = `<tr><td colspan="4">Error ${r.status}. Please login again</td></tr>`;
+      return;
+    }
+    const p = await r.json();
+    if(!p.content || p.content.length===0){
+      tbody.innerHTML = '<tr><td colspan="4">No transactions yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = p.content.map(x=>`<tr><td>${x.id}</td><td>${(x.amount/100).toFixed(2)} ${x.currency}</td><td>${x.status}</td><td>${new Date(x.createdAt).toLocaleString()}</td></tr>`).join('');
+  }catch(err){
+    tbody.innerHTML = `<tr><td colspan="4">Network error: ${err}</td></tr>`;
+  }
+}
+
+copyKey.addEventListener('click', async ()=>{ if(!localStorage.apiKey) return alert('No API key'); await navigator.clipboard.writeText(localStorage.apiKey); alert('Copied'); });
+
+saveWebhook.addEventListener('click', async ()=>{
+  const url = webhookEl.value.trim();
+  if(!token){ alert('Login first'); return; }
+  try{
+    const r = await fetch(base + '/api/merchants/me/webhook', {
+      method:'PUT', headers:{'Authorization':'Bearer ' + token,'Content-Type':'application/json'},
+      body: JSON.stringify(url)
+    });
+    if(!r.ok) throw new Error(await r.text());
+    msg.textContent = 'Saved';
+  }catch(e){ msg.textContent = 'Error saving'; }
+});
+
+loadTx();
+</script>
+</body>
+</html>

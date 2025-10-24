@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Settings</title></head>
+<body>
+  <h1>Settings</h1>
+  <label>Webhook URL</label>
+  <input id="url" placeholder="https://yourapp.ngrok.io/webhooks/payflow">
+  <button onclick="save()">Save</button>
+  <script>
+    const base='http://localhost:8080';
+    function save(){
+      const url = document.getElementById('url').value;
+      fetch(base+'/api/merchants/me/webhook',{
+        method:'PUT',
+        headers:{'Authorization':'Bearer '+localStorage.token,'Content-Type':'application/json'},
+        body:JSON.stringify(url)
+      }).then(()=>alert('Saved'))
+    }
+  </script>
+</body>
+</html>

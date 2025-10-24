@@ -1,0 +1,205 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Checkout • PayFlow</title>
+  <link rel="stylesheet" href="../assets/styles.css" />
+  <script type="module" src="../assets/ui-helpers.js"></script>
+  <script src="../sdk/payflow.js"></script> 
+</head>
+<body>
+  <div class="container">
+    <div class="card" style="display:flex;gap:18px;align-items:flex-start;">
+      <div style="flex:1">
+        <h2 class="h1">Complete Payment</h2>
+        <p class="help">Secure payment powered by PayFlow — use test card <strong>4242 4242 4242 4242</strong>.</p>
+
+        <div id="formWrap" style="margin-top:14px">
+          <div class="form-row">
+            <div class="form-col">
+              <label>Email</label>
+              <input id="email" class="input" type="email" placeholder="you@example.com"/>
+            </div>
+            <div class="form-col">
+              <label>Amount</label>
+              <input id="amount" class="input" readonly/>
+            </div>
+          </div>
+
+          <div style="margin-top:6px">
+            <label>Card information</label>
+            <div class="card-row" style="gap:12px">
+              <input id="card" class="input" placeholder="4242 4242 4242 4242" />
+            </div>
+            <div class="form-row" style="margin-top:8px">
+              <div class="form-col">
+                <label>Expiry (MM/YY)</label>
+                <input id="expiry" class="input" placeholder="MM/YY" />
+              </div>
+              <div style="width:120px">
+                <label>CVV</label>
+                <input id="cvv" class="input" placeholder="123" />
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Name on card</label>
+            <input id="name" class="input" placeholder="Full name" />
+          </div>
+
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-col">
+              <label>Country or region</label>
+              <select id="country" class="select">
+                <option>Malaysia</option>
+                <option>United States</option>
+                <option>Singapore</option>
+                <option>United Kingdom</option>
+              </select>
+            </div>
+            <div style="width:140px">
+              <label>Postcode</label>
+              <input id="postcode" class="input" placeholder="10000" />
+            </div>
+          </div>
+
+          <div id="errors" class="error" style="display:none"></div>
+
+          <div style="margin-top:16px">
+            <button id="pay" class="pay-btn">Pay</button>
+            <div id="status" class="help" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:260px">
+        <div style="background:#f8fbff;border-radius:12px;padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><small class="help">Card</small><div class="kv" id="previewName">—</div></div>
+            <div class="brand">VISA</div>
+          </div>
+          <div style="margin-top:12px">
+            <div style="font-weight:700;font-size:22px" id="previewNumber">•••• •••• •••• ••••</div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+              <div><small class="help">Exp</small><div id="previewExp">MM/YY</div></div>
+              <div><small class="help">CVV</small><div id="previewCvv">•••</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> 
+
+<script type="module">
+import { formatCardNumber, formatExpiry, formatCvv, isEmail } from '../assets/ui-helpers.js';
+
+// Use API Key directly
+function resolveApiKey(opts){
+  const params = new URLSearchParams(location.search);
+  const urlKey = params.get('key');
+  const metaKey = document.querySelector('meta[name="payflow-api-key"]')?.content;
+  const attrKey = document.querySelector(opts.selector || '#payflow-widget')?.dataset?.key;
+  const storeKey = localStorage.apiKey;
+  return opts.apiKey || urlKey || attrKey || metaKey || storeKey || null;
+}
+
+const params = new URLSearchParams(location.search);
+const amt = parseInt(params.get('amount')||'4999',10);
+
+document.getElementById('amount').value = (amt/100).toFixed(2);
+const cardEl = document.getElementById('card');
+const expiryEl = document.getElementById('expiry');
+const cvvEl = document.getElementById('cvv');
+const nameEl = document.getElementById('name');
+const emailEl = document.getElementById('email');
+const payBtn = document.getElementById('pay');
+const errors = document.getElementById('errors');
+const status = document.getElementById('status');
+
+const previewNumber = document.getElementById('previewNumber');
+const previewExp = document.getElementById('previewExp');
+const previewCvv = document.getElementById('previewCvv');
+const previewName = document.getElementById('previewName');
+
+cardEl.addEventListener('input', e=>{
+  e.target.value = formatCardNumber(e.target.value);
+  previewNumber.textContent = e.target.value || '•••• •••• •••• ••••';
+});
+expiryEl.addEventListener('input', e=>{
+  e.target.value = formatExpiry(e.target.value);
+  previewExp.textContent = e.target.value || 'MM/YY';
+});
+cvvEl.addEventListener('input', e=>{
+  e.target.value = formatCvv(e.target.value);
+  previewCvv.textContent = e.target.value ? e.target.value.replace(/./g,'•') : '•••';
+});
+nameEl.addEventListener('input', e=>{
+  previewName.textContent = e.target.value || '—';
+});
+
+payBtn.addEventListener('click', async ()=>{
+  errors.style.display='none'; errors.textContent='';
+  status.textContent='';
+
+  const email = emailEl.value.trim();
+  const card = cardEl.value.replace(/\s+/g,'');
+  const expiry = expiryEl.value.trim();
+  const cvv = cvvEl.value.trim();
+  const name = nameEl.value.trim();
+
+  let validation=[];
+  if(!isEmail(email)) validation.push('Enter a valid email.');
+  if(card.length !== 16) validation.push('Card number must be 16 digits.');
+  if(!/^\d{2}\/\d{2}$/.test(expiry)) validation.push('Expiry must be MM/YY.');
+  if(cvv.length !== 3) validation.push('CVV must be 3 digits.');
+  if(name.length < 2) validation.push('Name looks too short.');
+
+  if(validation.length){
+    errors.style.display='block';
+    errors.innerHTML = validation.join('<br/>');
+    return;
+  }
+
+  // prepare payload
+  const body = {
+    amount: amt,
+    currency: 'USD',
+    customerEmail: email,
+    customerName: name,
+    cardNumber: card,
+    expiry,
+    cvv,
+    country: document.getElementById('country').value,
+    postcode: document.getElementById('postcode').value
+  };
+
+  const apiKey = resolveApiKey({selector:'#payflow-widget'});
+  if(!apiKey){
+    errors.style.display='block';
+    errors.innerHTML = 'No API key found. Provide ?key=... or log in via portal first.';
+    return;
+  }
+
+  payBtn.disabled = true;
+  status.textContent = 'Processing payment...';
+  try{
+    const res = await fetch('http://localhost:8080' + '/api/payments', {
+     method:'POST',
+      headers:{'Content-Type':'application/json','X-PAYFLOW-KEY': apiKey},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message || JSON.stringify(data));
+    location.href = `confirm.html?id=${encodeURIComponent(data.transactionId)}&status=${encodeURIComponent(data.status)}`;
+   }catch(err){
+    errors.style.display='block';
+    errors.textContent = 'Payment failed: ' + (err.message || err);
+    payBtn.disabled = false;
+status.textContent = '';
+ }
+});
+</script>
+</body>
+</html>
